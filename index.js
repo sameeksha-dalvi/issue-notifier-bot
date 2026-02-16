@@ -6,12 +6,13 @@ const fs = require("fs");
 // read config
 const config = JSON.parse(fs.readFileSync("./config.json", "utf8"));
 const repo = config.repo;
+const filterLabels = config.labels || [];// labels to track
 
 // init telegram bot
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: false });
 
-// GitHub API URL 
-const GITHUB_API = `https://api.github.com/repos/${repo}/issues?sort=created&direction=desc`;
+// GitHub API URL (fetch newest created issues first, up to 100)
+const GITHUB_API = `https://api.github.com/repos/${repo}/issues?sort=created&direction=desc&per_page=100`;
 
 async function checkLatestIssue() {
     try {
@@ -34,32 +35,64 @@ async function checkLatestIssue() {
         // FILTER OUT PRs
         issues = issues.filter((i) => !i.pull_request);
 
+        // FILTER BY LABELS (case-insensitive)
+        if (filterLabels.length > 0) {
+            issues = issues.filter(issue => {
+                const issueLabels = issue.labels.map(l => l.name.toLowerCase().trim());
+                return filterLabels.some(label => issueLabels.includes(label.toLowerCase().trim()));
+            });
+        }
+
         if (issues.length === 0) {
-            console.log("No issues found.");
+            console.log("No issues found matching your labels.");
             return;
         }
 
-        const latest = issues[0];
+        // FILTER only NEW issues (id > lastIssueId)
+        const newIssues = issues.filter(issue => issue.id > lastIssueId);
 
-        console.log(`Latest issue: #${latest.number} - ${latest.title}`);
-        console.log(`URL: ${latest.html_url}`);
+        if (newIssues.length === 0) {
+            console.log("No new issues.");
+            return;
+        }
 
-        // Compare with last stored issue ID
-        if (latest.id !== lastIssueId) {
-            console.log("New issue detected!");
+        // Notify all new issues
+        for (const issue of newIssues.reverse()) { // oldest first
+            console.log(`New issue: #${issue.number} - ${issue.title}`);
+            console.log(`URL: ${issue.html_url}`);
 
-            // Send Telegram message
-            const message = `New issue detected!\n\n${latest.title}\n${latest.html_url}`;
+            const message = `New issue detected!\n\n#${issue.number} - ${issue.title}\n${issue.html_url}`;
 
-            bot.sendMessage(process.env.TELEGRAM_CHAT_ID, message)
+            await bot.sendMessage(process.env.TELEGRAM_CHAT_ID, message)
                 .then(() => console.log("Telegram message sent"))
                 .catch(err => console.error("Telegram error:", err.message));
 
-            // Save the new latest issue ID
-            fs.writeFileSync("last_issue.txt", String(latest.id));
-        } else {
-            console.log("No new issues.");
+            // update lastIssueId after each message
+            fs.writeFileSync("last_issue.txt", String(issue.id));
         }
+
+
+        // const latest = issues[0];
+
+        // console.log(`Latest issue: #${latest.number} - ${latest.title}`);
+        // console.log(`URL: ${latest.html_url}`);
+
+        // // Compare with last stored issue ID
+        // if (latest.id !== lastIssueId) {
+        //     console.log("New issue detected!");
+
+        //     // Send Telegram message
+        //     const message = `New issue detected!\n\n${latest.title}\n${latest.html_url}`;
+
+        //     bot.sendMessage(process.env.TELEGRAM_CHAT_ID, message)
+        //         .then(() => console.log("Telegram message sent"))
+        //         .catch(err => console.error("Telegram error:", err.message));
+
+        //     // Save the new latest issue ID
+        //     fs.writeFileSync("last_issue.txt", String(latest.id));
+        // } else {
+        //     console.log("No new issues.");
+        // }
 
     } catch (err) {
         console.error("Error fetching issues:", err.response ? err.response.data : err);

@@ -15,6 +15,13 @@ const GITHUB_API = `https://api.github.com/repos/${repo}/issues?sort=created&dir
 
 async function checkLatestIssue() {
     try {
+
+        // Read last stored issue ID
+        let lastIssueId = 0;
+        if (fs.existsSync("last_issue.txt")) {
+            lastIssueId = parseInt(fs.readFileSync("last_issue.txt", "utf8"));
+        }
+
         const response = await axios.get(GITHUB_API, {
             headers: {
                 "Accept": "application/vnd.github+json",
@@ -36,6 +43,23 @@ async function checkLatestIssue() {
 
         console.log(`Latest issue: #${latest.number} - ${latest.title}`);
         console.log(`URL: ${latest.html_url}`);
+
+        // Compare with last stored issue ID
+        if (latest.id !== lastIssueId) {
+            console.log("New issue detected!");
+
+            // Send Telegram message
+            const message = `New issue detected!\n\n${latest.title}\n${latest.html_url}`;
+
+            bot.sendMessage(process.env.TELEGRAM_CHAT_ID, message)
+                .then(() => console.log("Telegram message sent"))
+                .catch(err => console.error("Telegram error:", err.message));
+
+            // Save the new latest issue ID
+            fs.writeFileSync("last_issue.txt", String(latest.id));
+        } else {
+            console.log("No new issues.");
+        }
 
     } catch (err) {
         console.error("Error fetching issues:", err.response ? err.response.data : err);

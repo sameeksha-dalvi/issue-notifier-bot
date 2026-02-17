@@ -86,27 +86,32 @@ Follow the prompts to select your repository and issue labels.
 ### 1. Repository Configuration in Terminal
 This screenshot shows the CLI asking for GitHub repository:
 
-![Configure repository](https://github.com/sameeksha-dalvi/issue-notifier-bot/configure_repo.png)
+![Configure repository](https://raw.githubusercontent.com/sameeksha-dalvi/issue-notifier-bot/main/configure_repo.png)
 
 ### 2. Selecting Labels to Track
 After fetching labels from GitHub, you can select which ones to monitor:
 
-![Select labels](https://github.com/sameeksha-dalvi/issue-notifier-bot/select_labels.png)
+![Select labels](https://raw.githubusercontent.com/sameeksha-dalvi/issue-notifier-bot/main/select_labels.png)
 
 ---
 
 ## Run the Bot
 
-Start manually:
+Manual run (for testing):
 
 ```bash
 node index.js
 ```
 
-Start with PM2 (recommended for continuous background execution):
+Run automatically every 5 minutes using PM2 (recommended):
 
 ```bash
-pm2 start index.js --name github-issue-bot
+pm2 start index.js --cron "*/5 * * * *" --name github-issue-bot
+```
+
+Save the PM2 process so it restarts after reboot:
+
+```bash
 pm2 save
 pm2 startup
 ```

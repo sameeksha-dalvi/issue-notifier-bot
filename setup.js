@@ -73,8 +73,8 @@ async function setupBot() {
             console.log('Fetching labels from GitHub...');
             const allLabels = await fetchAllLabels(config.repo);
 
-            console.log("Fetched labels from GitHub:");
-            allLabels.forEach(l => console.log(`- "${l}"`));
+            // console.log("Fetched labels from GitHub:");
+            // allLabels.forEach(l => console.log(`- "${l}"`));
 
 
 

@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import axios from "axios";
-import TelegramBot from "node-telegram-bot-api";
+import { Telegraf } from 'telegraf';
 import fs from "fs";
 
 dotenv.config();
@@ -11,7 +11,7 @@ const repo = config.repo;
 const filterLabels = config.labels || []; // labels to track
 
 // init telegram bot
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: false });
+const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
 // GitHub API URL (fetch newest created issues first, up to 100)
 const GITHUB_API = `https://api.github.com/repos/${repo}/issues?sort=created&direction=desc&per_page=100`;
@@ -64,10 +64,8 @@ async function checkLatestIssue() {
 
       const message = `New issue detected!\n\n#${issue.number} - ${issue.title}\n${issue.html_url}`;
 
-      await bot
-        .sendMessage(process.env.TELEGRAM_CHAT_ID, message)
-        .then(() => console.log("Telegram message sent"))
-        .catch((err) => console.error("Telegram error:", err.message));
+      await bot.telegram.sendMessage(process.env.TELEGRAM_CHAT_ID, message);
+      console.log(`Sent: #${issue.number} - ${issue.title}`);
 
       // update lastIssueId after each message
       fs.writeFileSync("last_issue.txt", String(issue.id));

@@ -1,6 +1,6 @@
 # GitHub Issue Notifier Bot
 
-A simple Node.js bot that tracks new issues in your GitHub repository based on **labels** and sends notifications to **Telegram**.
+A simple Node.js bot that tracks new issues in a GitHub repository (e.g., any public repo) based on **labels** and sends notifications to **Telegram**.
 
 ---
 
@@ -156,4 +156,5 @@ Maintainers who want to track specific types of issues quickly.
 ---
 
 ## License
+
 MIT License
